@@ -1,1 +1,1 @@
-web: target/universal/stage/bin/spray-akka-sample-heroku
+web: target/universal/stage/bin/samspickem
