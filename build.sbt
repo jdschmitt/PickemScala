@@ -1,4 +1,4 @@
-name := "spray-akka-sample-heroku"
+name := "samspickem"
 
 version := "1.0"
 
