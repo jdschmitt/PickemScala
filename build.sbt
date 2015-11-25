@@ -20,3 +20,5 @@ libraryDependencies ++= {
     "org.specs2"          %%  "specs2-core"   % "2.3.11" % "test"
   )
 }
+
+jetty()
