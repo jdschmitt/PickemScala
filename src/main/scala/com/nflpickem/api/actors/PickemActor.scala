@@ -6,13 +6,16 @@ import spray.http._
 import MediaTypes._
 
 class PickemActor extends Actor with DefaultService {
+
   def actorRefFactory = context
   def receive = runRoute(defaultRoute)
+
 }
 
 trait DefaultService extends HttpService {
+
   val defaultRoute =
-    path("/") {
+    path("") {
       get {
         respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default, so we simply override here
           complete {
@@ -25,4 +28,5 @@ trait DefaultService extends HttpService {
         }
       }
     }
+
 }
