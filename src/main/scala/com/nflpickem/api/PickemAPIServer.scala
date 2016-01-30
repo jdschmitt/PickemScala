@@ -31,3 +31,5 @@ object PickemAPIServer extends App {
   IO(Http) ! Http.Bind(service, interface = host, port = port)
 
 }
+
+// TODO Connect to ClearDB
