@@ -1,32 +1,41 @@
 package com.nflpickem.api.actors
 
-import akka.actor.Actor
+import akka.actor.{ActorContext, Actor}
+import com.nflpickem.api._
+import com.nflpickem.api.model.Player
+import com.nflpickem.api.services.PickemApiService
+import spray.httpx.SprayJsonSupport
+import spray.json._
 import spray.routing._
 import spray.http._
 import MediaTypes._
 
-class PickemActor extends Actor with DefaultService {
+import scala.util.{Failure, Success}
 
-  def actorRefFactory = context
-  def receive = runRoute(defaultRoute)
+import scala.concurrent.ExecutionContext.Implicits.global
+
+class PickemActor extends HttpServiceActor with PickemApiService {
+
+  def receive = runRoute(route)
 
 }
 
-trait DefaultService extends HttpService {
 
-  val defaultRoute =
-    path("") {
-      get {
-        respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default, so we simply override here
-          complete {
-            <html>
-              <body>
-                <h1>Say hello to <i>Sam's</i> <strong>NFL</strong> pick'em on Heroku with <i>spray-can</i>!</h1>
-              </body>
-            </html>
-          }
-        }
-      }
+trait PickemResponseSupport extends SprayJsonSupport with DefaultJsonProtocol {
+
+  private def writePickemResponse(o:PickemResponse):JsValue = {
+    val meta = Seq("meta" -> o.meta.asInstanceOf[JsValue])
+    val data = o.dataJson match {
+      case o:JsObject => Seq("data" -> o)
+      case a:JsArray  => Seq("data" -> a)
+      case _          => Seq()
     }
+
+    JsObject((meta ++ data).toMap)
+  }
+
+  implicit object K2ResponseJsonFormat extends RootJsonWriter[PickemResponse] {
+    def write(o:PickemResponse) = writePickemResponse(o)
+  }
 
 }

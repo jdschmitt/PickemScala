@@ -1,11 +1,12 @@
 package com.nflpickem.api
 
-import akka.actor.{Props, ActorSystem}
+import akka.actor._
 import akka.io.IO
 import akka.util.Timeout
+import com.nflpickem.database.PickemMySqlConnectionPool
+import scala.concurrent._
 import scala.concurrent.duration._
 import com.nflpickem.api.actors.PickemActor
-import com.typesafe.config.ConfigFactory
 import spray.can.Http
 
 import scala.util.Properties
@@ -15,21 +16,44 @@ import scala.util.Properties
   */
 object PickemAPIServer extends App {
 
-  implicit val system = ActorSystem("PickemAPI")
+  Pickem.system.log.info("Starting Pickem server...")
 
-  val config = ConfigFactory.load()
+  Pickem.initialize()
 
-  val service = system.actorOf(Props[PickemActor], "pickem-service")
-
-  val host = config.getString("server.host")
-  val defaultPort = config.getString("server.port")
-  // start a new HTTP server on port 8080 with our service actor as the handler
-  val port = Properties.envOrElse("PORT", defaultPort).toInt
-  println(s"Attempting to start on port: $port")
-
-  implicit val timeout = Timeout(5.seconds)
-  IO(Http) ! Http.Bind(service, interface = host, port = port)
+  Pickem.startHttpServer()
 
 }
 
-// TODO Connect to ClearDB
+object Pickem {
+
+  implicit val system = ActorSystem("PickemAPI")
+
+  private def startDbConnectionPool(): Unit = {
+    PickemMySqlConnectionPool.startup(MySqlConfig)
+
+    system.registerOnTermination {
+      system.log.info("Shutting down MySQL connection pool...")
+      PickemMySqlConnectionPool.shutdown()
+    }
+  }
+
+  def initialize(): Unit = {
+    startDbConnectionPool()
+  }
+
+  def startHttpServer() = {
+    implicit val timeout = Timeout(5.seconds)
+
+    val service = Pickem.system.actorOf(Props[PickemActor], "pickem-service")
+
+    val host = Config.getString("server.host")
+    val port = Config.getString("server.port").toInt
+
+    IO(Http) ! Http.Bind(service, interface = host, port = port)
+  }
+
+  def readVars(env: String, conf: String): String = {
+    Properties.envOrElse(env, Config.getString(conf))
+  }
+
+}
